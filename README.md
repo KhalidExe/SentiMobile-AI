@@ -1,6 +1,6 @@
-# 🧠 SentiMobile AI V3.4 | Neural Sentiment Engine
+# 🧠 SentiMobile AI V3.5 | Neural Sentiment Engine
 
-![Project Status](https://img.shields.io/badge/Status-Stable_V3.4-00ff88?style=for-the-badge)
+![Project Status](https://img.shields.io/badge/Status-Stable_V3.5-00ff88?style=for-the-badge)
 ![Python](https://img.shields.io/badge/Python-3.10+-blue?style=for-the-badge&logo=python)
 ![Flask](https://img.shields.io/badge/Backend-Flask-white?style=for-the-badge&logo=flask)
 ![Tailwind](https://img.shields.io/badge/Frontend-Tailwind_CSS-38bdf8?style=for-the-badge&logo=tailwindcss)
