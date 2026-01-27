@@ -11,9 +11,9 @@
 ---
 
 ## 📸 Screenshots
-- **HomePage** ![Home Page](screenshots/image.png)
-- **Loading** ![Loading Animation](screenshots/image-1.png)
-- **ANALYSIS** ![Dashboard](screenshots/image-2.png) ![Charts](screenshots/image-3.png) ![System Analysis](screenshots/image-4.png)
+- **HomePage** ![Home Page](Screenshots/image.png)
+- **Loading** ![Loading Animation](Screenshots/image-1.png)
+- **ANALYSIS** ![Dashboard](Screenshots/image-2.png) ![Charts](Screenshots/image-3.png) ![System Analysis](Screenshots/image-4.png)
 
 ---
 
@@ -70,7 +70,24 @@
 ---
 
 ## 📂 Project Structure
-SentiMobile-AI/ │ ├── app.py # The Flask Backend & Logic Core ├── requirements.txt # Python Dependencies ├── README.md # Documentation │ ├── templates/ │ └── index.html # The Cyberpunk Frontend (Single File) │ └── static/ # (Optional) For custom assets
+## 📂 Project Structure
+
+```text
+SentiMobile-AI/
+│
+├── app.py                 # The Flask Backend & Logic Core
+├── requirements.txt       # Python Dependencies
+├── README.md              # Documentation
+│
+├── templates/
+│   └── index.html         # The Cyberpunk Frontend (Single File)
+│
+├── static/                # (Optional) For custom assets
+│
+└── Screenshots/           # Images for README
+    ├── image.png
+    └── ...
+```
 
 ---
 
