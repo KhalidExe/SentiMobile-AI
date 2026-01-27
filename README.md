@@ -70,7 +70,6 @@
 ---
 
 ## 📂 Project Structure
-## 📂 Project Structure
 
 ```text
 SentiMobile-AI/
