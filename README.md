@@ -8,6 +8,7 @@
 > **A Next-Gen Sentiment Analysis Dashboard designed with a Cyberpunk aesthetic.**
 > SentiMobile AI processes bulk customer reviews (CSV/Excel), extracts semantic insights, and visualizes data through an interactive, high-performance interface.
 
+[![Live Demo](https://img.shields.io/badge/🚀_Live_Demo-Try_It_Now-00ff88?style=for-the-badge&logo=render&logoColor=black)](https://sentimobile-ai.onrender.com)
 ---
 
 ## 📸 Screenshots
