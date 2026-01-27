@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <title>SentiMobile V3.5 | Star Rating Added</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <style>
+        :root { --neon: #00ff88; --dark: #000000; --blue: #00d4ff; --gold: #ffd700; }
+        body { background: radial-gradient(circle at center, #05100a 0%, var(--dark) 100%); color: white; font-family: 'JetBrains Mono', monospace; overflow-x: hidden; }
+        .sticky-header { position: sticky; top: 0; z-index: 1000; background: rgba(0, 0, 0, 0.95); backdrop-filter: blur(20px); border-bottom: 1px solid #1a1a1a; }
+        .cyber-panel { background: rgba(10, 10, 10, 0.8); border: 1px solid #1a1a1a; opacity: 0; transform: translateY(20px); transition: 0.3s; display: flex; flex-direction: column; }
+        .cyber-panel:hover { border-color: var(--neon); box-shadow: 0 0 25px rgba(0, 255, 136, 0.1); }
+        #flying-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; }
+        .flying-text { position: absolute; color: var(--neon); opacity: 0; font-size: 10px; white-space: nowrap; font-family: monospace; text-shadow: 0 0 5px var(--neon); }
+        .word-tag { display: inline-block; padding: 2px 6px; transition: 0.2s; cursor: default; }
+        .word-tag:hover { text-shadow: 0 0 10px currentColor; transform: scale(1.1); }
+        
+        /* Star Rating Styles */
+        .star-container { display: inline-flex; position: relative; font-size: 3rem; line-height: 1; }
+        .stars-bg { color: #333; } /* Empty stars */
+        .stars-fill { color: var(--gold); position: absolute; top: 0; left: 0; overflow: hidden; white-space: nowrap; width: 0%; transition: width 1s ease-out; text-shadow: 0 0 20px var(--gold); }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: var(--neon); border-radius: 3px; }
+        .hidden-view { display: none !important; }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <canvas id="bg" class="fixed top-0 left-0 -z-10"></canvas>
+    <div id="flying-container"></div>
+
+    <header class="sticky-header p-4 px-8 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <span class="text-xl font-black italic tracking-tighter">SENTI<span class="text-[#00ff88]">MOBILE</span></span>
+            <span class="text-[10px] text-[#00ff88] font-bold tracking-widest bg-black border border-[#00ff88] px-2 rounded">V3.5 STARS</span>
+        </div>
+        <div class="flex gap-4 items-center">
+            <button onclick="toggleLang()" id="langBtn" class="text-[10px] border border-gray-800 px-3 py-1 rounded hover:text-[#00ff88] hover:border-[#00ff88] transition-all">ARABIC</button>
+            <button onclick="location.reload()" id="headReset" class="text-[10px] text-gray-500 hover:text-white uppercase tracking-widest border border-transparent hover:border-white px-3 py-1 rounded transition-all">NEW UPLOAD ↻</button>
+        </div>
+    </header>
+
+    <main class="relative z-10 pb-20">
+        <div id="uploadView" class="flex flex-col items-center justify-center min-h-[85vh]">
+            <div id="dropZone" class="cyber-panel opacity-100 transform-none p-24 rounded-[40px] border-dashed border-2 border-[#222] cursor-pointer group hover:bg-[#050505] transition-all justify-center items-center" onclick="document.getElementById('fileIn').click()">
+                <div class="text-center">
+                    <div class="text-7xl mb-6 group-hover:scale-110 transition-transform duration-500 text-gray-700 group-hover:text-[#00ff88]">💾</div>
+                    <h2 id="t-upload" class="text-2xl font-bold uppercase tracking-widest text-white">INITIALIZE DATA LINK</h2>
+                    <p id="t-hint" class="text-xs text-gray-500 mt-3 font-mono">Supported Formats: .CSV, .XLSX</p>
+                </div>
+            </div>
+            <input type="file" id="fileIn" class="hidden" accept=".csv, .xlsx">
+        </div>
+
+        <div id="loadView" class="hidden-view flex flex-col items-center justify-center min-h-[85vh]">
+            <div class="w-96 text-center relative z-50">
+                <h2 id="t-loading" class="text-sm font-black mb-8 tracking-[0.5em] text-[#00ff88] animate-pulse">PROCESSING_NEURAL_NET</h2>
+                <div class="h-[2px] bg-[#111] w-full relative overflow-hidden">
+                    <div id="progressBar" class="absolute top-0 left-0 h-full bg-[#00ff88] w-0 shadow-[0_0_20px_#00ff88]"></div>
+                </div>
+                <p class="mt-4 text-[10px] text-gray-500 font-mono">Calculating semantic weight...</p>
+            </div>
+        </div>
+
+        <div id="dashView" class="hidden-view p-8 space-y-8 max-w-[1600px] mx-auto">
+            
+            <div class="flex flex-col md:flex-row justify-between items-end pb-4 border-b border-gray-800">
+                <div>
+                    <h1 class="text-3xl font-black italic text-white mb-1">ANALYSIS <span class="text-[#00ff88]">COMPLETE</span></h1>
+                    <p class="text-[10px] text-gray-500 font-mono">ID: <span id="reportId"></span></p>
+                </div>
+                <div class="flex gap-4 mt-4 md:mt-0">
+                    <button onclick="location.reload()" id="dashReset" class="border border-gray-600 px-6 py-2 rounded-full text-[10px] font-bold hover:bg-white hover:text-black transition uppercase">New Analysis</button>
+                    <button onclick="location.href='/download_ready'" id="dashDl" class="border border-[#00ff88] text-[#00ff88] px-8 py-2 rounded-full text-[10px] font-bold uppercase hover:bg-[#00ff88] hover:text-black transition">Download Report</button>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="cyber-panel p-8 rounded-2xl justify-center">
+                    <div class="flex justify-between items-center w-full">
+                        <div><p id="t-total" class="text-gray-500 text-[10px] uppercase font-bold tracking-widest mb-1">Total Signals</p><p id="v-total" class="text-4xl font-black text-white">0</p></div>
+                        <div class="text-right"><p id="t-index" class="text-gray-500 text-[10px] uppercase font-bold tracking-widest mb-1">Score</p><p id="v-avg" class="text-4xl font-black text-[#00ff88]">0.0</p></div>
+                    </div>
+                </div>
+                <div class="cyber-panel p-8 rounded-2xl relative overflow-hidden justify-center">
+                    <div class="flex justify-between items-end mb-2"><p class="text-[10px] text-blue-400 font-bold uppercase tracking-widest">Fact vs Opinion</p><p id="v-subj" class="text-2xl font-black text-white">0%</p></div>
+                    <div class="w-full bg-[#111] h-2 rounded-full overflow-hidden"><div id="subj-bar" class="h-full bg-blue-500 w-0 shadow-[0_0_10px_#0088ff]"></div></div>
+                    <div class="flex justify-between mt-2 text-[9px] text-gray-500 italic"><span>Factual</span><span>Opinionated</span></div>
+                </div>
+                <div class="cyber-panel p-4 rounded-2xl h-40 items-center justify-center relative">
+                    <div class="h-full w-full max-w-[200px] flex items-center justify-center"><canvas id="pieChart"></canvas></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="cyber-panel p-6 rounded-2xl lg:col-span-2 h-[450px]">
+                    <div class="flex justify-between items-center mb-2 flex-shrink-0">
+                        <p class="text-[10px] text-gray-500 font-bold uppercase">TIMELINE ANALYSIS (FLOW)</p>
+                        <span id="date-badge" class="text-[9px] bg-[#111] text-gray-500 px-2 py-1 rounded hidden">DATE DETECTED</span>
+                    </div>
+                    <div class="flex-grow w-full relative min-h-0"><canvas id="lineChart"></canvas></div>
+                    <div class="mt-3 pt-2 border-t border-[#1a1a1a] flex justify-between items-center text-[9px] font-mono">
+                        <div class="flex items-center gap-2"><span class="text-[#00ff88] font-bold text-xs">Y</span><span class="text-gray-400" id="t-y-expl">Sentiment Score (High=Pos, Low=Neg)</span></div>
+                        <div class="flex items-center gap-2"><span class="text-gray-400" id="t-x-expl">Review Sequence / Time Progress</span><span class="text-[#00ff88] font-bold text-xs">X</span></div>
+                    </div>
+                </div>
+                <div class="cyber-panel p-6 rounded-2xl h-[450px]">
+                    <p class="text-[10px] text-gray-500 font-bold mb-4 uppercase flex-shrink-0">TOP KEYWORDS CLOUD</p>
+                    <div id="word-cloud" class="flex-1 flex flex-wrap content-start justify-center gap-2 overflow-y-auto pr-2"></div>
+                </div>
+            </div>
+
+            <div class="cyber-panel p-6 rounded-2xl h-[300px]">
+                 <p class="text-[10px] text-gray-500 font-bold mb-4 uppercase flex-shrink-0">VOLUME METRICS</p>
+                 <div class="flex-grow w-full relative min-h-0"><canvas id="barChart"></canvas></div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="cyber-panel p-4 rounded-xl border-t border-emerald-500/50"><h4 class="text-emerald-500 text-[9px] font-black mb-3 uppercase tracking-widest">Positive_Stream</h4><div id="pos-samples" class="space-y-2"></div></div>
+                <div class="cyber-panel p-4 rounded-xl border-t border-gray-500/50"><h4 class="text-gray-500 text-[9px] font-black mb-3 uppercase tracking-widest">Neutral_Stream</h4><div id="neu-samples" class="space-y-2"></div></div>
+                <div class="cyber-panel p-4 rounded-xl border-t border-red-500/50"><h4 class="text-red-500 text-[9px] font-black mb-3 uppercase tracking-widest">Negative_Stream</h4><div id="neg-samples" class="space-y-2"></div></div>
+                <div class="cyber-panel p-4 rounded-xl border-t border-yellow-500/50"><h4 class="text-yellow-500 text-[9px] font-black mb-3 uppercase tracking-widest">Mismatch_Data</h4><div id="mis-samples" class="space-y-2"></div></div>
+            </div>
+
+            <div class="cyber-panel p-10 rounded-3xl border border-[#00ff88]/30 relative overflow-hidden mt-10">
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#00ff88] to-transparent opacity-50"></div>
+                <h2 id="t-conclusion-title" class="text-3xl font-black italic text-white mb-6 flex items-center gap-3"><span class="text-[#00ff88]">AI</span> EXECUTIVE ABSTRACT</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                    <div class="lg:col-span-1">
+                        <h3 class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-3">System Analysis</h3>
+                        <div id="v-abstract" class="text-sm text-gray-300 leading-7 font-light text-justify space-y-4"></div>
+                    </div>
+                    <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-[#050505] p-6 rounded-xl border-l-2 border-[#00ff88]">
+                            <h3 class="text-[#00ff88] text-xs font-black uppercase mb-3">🏭 For Sellers / Developers</h3>
+                            <ul id="rec-seller" class="text-xs text-gray-400 leading-relaxed list-disc list-inside space-y-2"></ul>
+                        </div>
+                        <div class="bg-[#050505] p-6 rounded-xl border-l-2 border-blue-500">
+                            <h3 class="text-blue-500 text-xs font-black uppercase mb-3">🛒 For Buyers / Users</h3>
+                            <ul id="rec-buyer" class="text-xs text-gray-400 leading-relaxed list-disc list-inside space-y-2"></ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cyber-panel p-10 rounded-3xl border-t-2 border-yellow-500 relative overflow-hidden mt-10 text-center">
+                <p id="t-rating-title" class="text-[10px] text-yellow-500 font-bold uppercase tracking-[0.5em] mb-4">AGGREGATED USER RATING</p>
+                
+                <div class="flex flex-col items-center justify-center">
+                    <div class="star-container">
+                        <div class="stars-bg">★★★★★</div>
+                        <div class="stars-fill" id="stars-fill">★★★★★</div>
+                    </div>
+                    <p id="v-star-num" class="text-5xl font-black text-white mt-4">0.0<span class="text-lg text-gray-500">/5</span></p>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        let currentLang = 'EN'; let storedData = null;
+        const i18n = {
+            EN: { upload: "INITIALIZE DATA LINK", hint: "Supported Formats: .CSV, .XLSX", loading: "PROCESSING_NEURAL_NET", total: "Total Signals Analyzed", index: "Sentiment Score", conTitle: "<span class='text-[#00ff88]'>AI</span> EXECUTIVE ABSTRACT", headReset: "NEW UPLOAD ↻", dashReset: "New Analysis", dashDl: "Download Report", yExpl: "Sentiment Score (High=Pos, Low=Neg)", xExpl: "Review Sequence / Time Progress", rateTitle: "AGGREGATED USER RATING" },
+            AR: { upload: "تهيئة اتصال البيانات", hint: "الصيغ المدعومة: CSV, XLSX", loading: "جاري معالجة الشبكة العصبية", total: "إجمالي الإشارات المحللة", index: "مؤشر المشاعر", conTitle: "ملخص <span class='text-[#00ff88]'>الذكاء الاصطناعي</span> التنفيذي", headReset: "فحص جديد ↻", dashReset: "تحليل جديد", dashDl: "تحميل التقرير", yExpl: "مقياس المشاعر (فوق=إيجابي، تحت=سلبي)", xExpl: "تسلسل المراجعات / التقدم الزمني", rateTitle: "تقييم المستخدمين المجمّع" }
+        };
+
+        function toggleLang() {
+            currentLang = currentLang === 'EN' ? 'AR' : 'EN';
+            document.documentElement.dir = currentLang === 'AR' ? 'rtl' : 'ltr';
+            document.getElementById('langBtn').innerText = currentLang === 'EN' ? 'ARABIC' : 'ENGLISH';
+            document.getElementById('t-upload').innerText = i18n[currentLang].upload;
+            document.getElementById('t-hint').innerText = i18n[currentLang].hint;
+            document.getElementById('t-loading').innerText = i18n[currentLang].loading;
+            document.getElementById('t-total').innerText = i18n[currentLang].total;
+            document.getElementById('t-index').innerText = i18n[currentLang].index;
+            document.getElementById('t-conclusion-title').innerHTML = i18n[currentLang].conTitle;
+            document.getElementById('headReset').innerText = i18n[currentLang].headReset;
+            document.getElementById('dashReset').innerText = i18n[currentLang].dashReset;
+            document.getElementById('dashDl').innerText = i18n[currentLang].dashDl;
+            document.getElementById('t-y-expl').innerText = i18n[currentLang].yExpl;
+            document.getElementById('t-x-expl').innerText = i18n[currentLang].xExpl;
+            document.getElementById('t-rating-title').innerText = i18n[currentLang].rateTitle;
+            if (storedData) renderConclusion(storedData);
+        }
+
+        // Particles
+        const canvas = document.getElementById('bg'); const ctx = canvas.getContext('2d');
+        let particles = []; let mouse = { x: -1000, y: -1000 };
+        window.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; });
+        function initP() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; particles = []; for(let i=0; i<80; i++) particles.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, size: Math.random()*1.5, vx: (Math.random()-0.5)*0.6, vy: (Math.random()-0.5)*0.6 }); }
+        function animP() { ctx.clearRect(0,0,canvas.width, canvas.height); particles.forEach(p => { p.x += p.vx; p.y += p.vy; if(p.x<0||p.x>canvas.width) p.vx*=-1; if(p.y<0||p.y>canvas.height) p.vy*=-1; const d = Math.sqrt((mouse.x-p.x)**2 + (mouse.y-p.y)**2); if(d<150){ctx.beginPath(); ctx.strokeStyle=`rgba(0,255,136,${1-d/150})`; ctx.moveTo(p.x,p.y); ctx.lineTo(mouse.x,mouse.y); ctx.stroke();} ctx.fillStyle='#00ff88'; ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill(); }); requestAnimationFrame(animP); }
+        window.onresize=initP; initP(); animP();
+
+        // Upload
+        document.getElementById('fileIn').onchange = async function(e) {
+            const file = e.target.files[0]; if(!file) return;
+            document.getElementById('uploadView').classList.add('hidden-view'); document.getElementById('loadView').classList.remove('hidden-view');
+            const fd = new FormData(); fd.append('file', file);
+            let p = 0; const bar = document.getElementById('progressBar');
+            const interval = setInterval(() => { p += 1; bar.style.width = p + '%'; if(p >= 95) clearInterval(interval); }, 50);
+            try {
+                const res = await fetch('/analyze_file', { method: 'POST', body: fd });
+                const data = await res.json();
+                if(data.error) throw new Error(data.error);
+                if(data.flying_samples) { let c=0; const f=setInterval(()=>{ if(c>25) clearInterval(f); spawnTxt(data.flying_samples); c++; }, 100); }
+                bar.style.width = '100%'; setTimeout(() => { document.getElementById('loadView').classList.add('hidden-view'); renderDashboard(data); }, 3000);
+            } catch(err) { alert("ERROR: " + err.message); location.reload(); }
+        };
+
+        function spawnTxt(s) { const c=document.getElementById('flying-container'); const t=document.createElement('div'); t.className='flying-text'; t.innerText=s[Math.floor(Math.random()*s.length)].substring(0,40)+"..."; t.style.left=Math.random()*window.innerWidth+'px'; t.style.top=(window.innerHeight+50)+'px'; c.appendChild(t); anime({ targets: t, top: -100, left: Math.random()*window.innerWidth, opacity: [0, 1, 0], duration: 4000, easing: 'easeOutSine', complete: () => t.remove() }); }
+        function createSample(text, color) { return `<div class="p-2 bg-black/40 border-l border-${color}-500 text-[9px] text-gray-500 italic truncate hover:text-gray-300 transition">"${text.substring(0, 70)}..."</div>`; }
+
+        function renderConclusion(data) {
+            const pos = data.summary['Positive']||0; const rate = ((pos/data.total)*100).toFixed(1); const subjP = Math.round(data.subj * 100);
+            let st = rate > 65 ? "Positive" : (rate < 40 ? "Negative" : "Neutral"); const op = subjP > 50 ? "Subjective" : "Objective";
+            
+            const p1_EN = `SentiMobile processed ${data.total} signals. Satisfaction: ${rate}%, Global Score: ${data.avg}.`;
+            const p2_EN = `Data is primarily ${op} (${subjP}% subjectivity). Users are ${subjP>50?"expressive":"factual"}.`;
+            const p3_EN = `Trajectory: ${st}. Trend: ${data.avg>0?"Upward":"Downward"}.`;
+            
+            const p1_AR = `عالج النظام ${data.total} إشارة. الرضا: ${rate}٪، الدرجة: ${data.avg}.`;
+            const p2_AR = `البيانات ${op==="Subjective"?"ذاتية":"موضوعية"} بنسبة ${subjP}٪. المستخدمون ${subjP>50?"عاطفيون":"واقعيون"}.`;
+            const p3_AR = `المسار: ${st==="Positive"?"إيجابي":st==="Negative"?"سلبي":"محايد"}. الاتجاه: ${data.avg>0?"صاعد":"هابط"}.`;
+
+            document.getElementById('v-abstract').innerHTML = currentLang==='EN' ? `<p>${p1_EN}</p><p class="mt-2">${p2_EN}</p><p class="mt-2 text-[#00ff88]">${p3_EN}</p>` : `<p>${p1_AR}</p><p class="mt-2">${p2_AR}</p><p class="mt-2 text-[#00ff88]">${p3_AR}</p>`;
+            
+            const sList = document.getElementById('rec-seller'); const bList = document.getElementById('rec-buyer'); sList.innerHTML=''; bList.innerHTML='';
+            if(currentLang==='EN'){
+                if(st==="Positive"){ sList.innerHTML+=`<li>Increase ad spend.</li><li>Highlight features.</li>`; bList.innerHTML+=`<li>Safe Buy.</li>`; }
+                else if(st==="Negative"){ sList.innerHTML+=`<li class="text-red-400">Fix defects.</li>`; bList.innerHTML+=`<li>High Risk.</li>`; }
+                else{ sList.innerHTML+=`<li>Clarify USP.</li>`; bList.innerHTML+=`<li>Mixed Results.</li>`; }
+            } else {
+                if(st==="Positive"){ sList.innerHTML+=`<li>زد الإعلانات.</li><li>أبرز المزايا.</li>`; bList.innerHTML+=`<li>شراء آمن.</li>`; }
+                else if(st==="Negative"){ sList.innerHTML+=`<li class="text-red-400">أصلح العيوب.</li>`; bList.innerHTML+=`<li>خطر عالي.</li>`; }
+                else{ sList.innerHTML+=`<li>وضح القيمة.</li>`; bList.innerHTML+=`<li>نتائج مختلطة.</li>`; }
+            }
+        }
+
+        function renderDashboard(data) {
+            storedData = data;
+            document.getElementById('dashView').classList.remove('hidden-view');
+            document.getElementById('reportId').innerText = Math.random().toString(36).substr(2, 9).toUpperCase();
+            document.getElementById('v-total').innerText = data.total; document.getElementById('v-avg').innerText = data.avg;
+            const subjP = Math.round(data.subj * 100); document.getElementById('v-subj').innerText = subjP + "%"; document.getElementById('subj-bar').style.width = subjP + "%";
+            
+            const cloud = document.getElementById('word-cloud'); cloud.innerHTML = '';
+            data.word_cloud.forEach(w => { const s = document.createElement('span'); s.innerText = w.text; s.className = 'word-tag'; s.style.fontSize = Math.max(10, Math.min(30, w.value/2)) + 'px'; s.style.color = ['#00ff88', '#00d4ff', '#fff', '#888'][Math.floor(Math.random()*4)]; cloud.appendChild(s); });
+            if(data.has_date) document.getElementById('date-badge').classList.remove('hidden');
+
+            // Charts
+            const pos = data.summary['Positive']||0;
+            const opts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: true, grid: { color: '#111' }, ticks: { color: '#666', font: {size: 9} } }, y: { display: true, grid: { color: '#111' }, ticks: { color: '#666', font: {size: 9} } } } };
+            new Chart(document.getElementById('pieChart'), { type: 'doughnut', data: { labels: ['P','N','X'], datasets: [{ data: [pos, data.summary['Negative'], data.summary['Neutral']], backgroundColor: ['#00ff88','#ff4444','#333'], borderWidth: 0 }] }, options: { ...opts, scales:{x:{display:false},y:{display:false}}, cutout: '70%' } });
+            new Chart(document.getElementById('lineChart'), { type: 'line', data: { labels: data.timeline_labels, datasets: [{ data: data.timeline_data, borderColor: '#00ff88', borderWidth: 1.5, tension: 0.4, pointRadius: 1, fill: true, backgroundColor: 'rgba(0,255,136,0.05)' }] }, options: opts });
+            new Chart(document.getElementById('barChart'), { type: 'bar', data: { labels: ['POS','NEU','NEG'], datasets: [{ data: [pos, data.summary['Neutral'], data.summary['Negative']], backgroundColor: ['#00ff88','#333','#ff4444'], borderRadius: 4 }] }, options: opts });
+
+            // Samples
+            const fill = (id, l, c) => document.getElementById(id).innerHTML = l.length ? l.map(x => createSample(x, c)).join('') : '<span class="text-[9px] text-gray-600">No samples found</span>';
+            fill('pos-samples', data.pos_samples, 'emerald'); fill('neu-samples', data.neu_samples, 'gray'); fill('neg-samples', data.neg_samples, 'red'); fill('mis-samples', data.mis_samples, 'yellow');
+
+            // Star Rating Logic
+            const rating = data.star_rating;
+            document.getElementById('v-star-num').innerHTML = rating + '<span class="text-lg text-gray-500">/5</span>';
+            // Calculate percentage width: (rating / 5) * 100
+            const starWidth = (rating / 5) * 100;
+            document.getElementById('stars-fill').style.width = starWidth + '%';
+
+            renderConclusion(data);
+            anime({ targets: '.cyber-panel', opacity: [0, 1], translateY: [20, 0], delay: anime.stagger(100), easing: 'easeOutExpo' });
+        }
+    </script>
+</body>
+</html>
